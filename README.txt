@@ -23,4 +23,4 @@ OpenMPT123, by manx and Saga Musix: https://lib.openmpt.org/
 =========    Ps: the size of the .mod file should be very small. If it's too large, try deleting some samples.
 	     Ps2: to edit the SPC700 Player options, use the spcplay.exe. Just DO NOT change the speed, it has to be 100%.
 	     
-Usage: paste your input file in the folder and execute the desired .bat file. 
+Usage: paste your input file in the folder and execute the .bat file. 
