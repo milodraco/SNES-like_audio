@@ -1,4 +1,4 @@
-SNES-like Audio v0.9alpha
+SNES-like Audio v0.99 alpha
 by milodraco.
 
 These batch files perform a couple of operations using some softwares to transform your audio files to sound 'SNES-like'.
