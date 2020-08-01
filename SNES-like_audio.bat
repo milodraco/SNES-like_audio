@@ -1,20 +1,28 @@
 @echo off
-echo SNES-like Audio
-echo Designed by milodraco
+:head
+echo 				.........................
+echo 				:    SNES-like Audio    :
+echo 				: Designed by milodraco :
+echo 				'''''''''''''''''''''''''
 echo.
-echo 1. wav2wav: Applies some effects, filters, interpolation and transcode (wav-brr-wav) a 
-echo stereo .wav file.
+echo 	1. wav2wav: Applies some effects, filters, interpolation and transcode (wav-brr-wav) a 
+echo 	stereo .wav file.
 echo.
-echo 2. monoSFX: Use this if you are converting a mono audio file, great for sound effects.
+echo 	2. monoSFX: Use this if you are converting a mono audio file, great for sound effects.
 echo.
-echo 3. mod2wav: Converts .mod or .xm files to SPC700 emulated .wav files.
+echo 	3. mod2wav: Converts .mod or .xm files to SPC700 emulated .wav files.
 echo.
 
-set /p n=Please, enter your choice: 
+set /p n=Please, enter a valid option (1/2/3): 
 IF "%n%"=="1" GOTO wav2wav
 IF "%n%"=="2" GOTO monoSFX
 IF "%n%"=="3" GOTO mod2wav
-echo Invalid number. | echo. | pause | exit
+echo.
+echo Invalid option!
+echo.
+pause
+cls
+goto head
 
 :wav2wav
 cls
@@ -27,6 +35,14 @@ echo SNESBRR, by DMV27: https://github.com/boldowa/snesbrr
 echo Sound eXchange: http://sox.sourceforge.net/
 echo.
 set /p file=Please, enter the file name without extension (e.g mysong): 
+if not exist %file%.wav (
+echo.
+echo Empty path, no file found!
+echo.
+pause
+cls
+goto :wav2wav
+)
 set /p opt=Press ENTER to start or adv for advanced options: 
 
 IF "%opt%"=="" set db=-0.2
@@ -77,6 +93,14 @@ echo SNESBRR, by DMV27: https://github.com/boldowa/snesbrr
 echo Sound eXchange: http://sox.sourceforge.net/
 echo.
 set /p file=Please, enter the file name without extension (e.g mysong): 
+if not exist %file%.wav (
+echo.
+echo Empty path, no file found!
+echo.
+pause
+cls
+goto :monoSFX
+)
 set /p opt=Press ENTER to start or adv for advanced options: 
 
 IF "%opt%"=="" set db=-0.2
@@ -136,6 +160,14 @@ echo.
 
 set /p file=Please, enter the file name without extension (e.g mysong): 
 set /p ext=Please, enter the file extension (mod/xm): 
+if not exist %file%.%ext% (
+echo.
+echo Empty path, no file found!
+echo.
+pause
+cls
+goto :mod2wav
+)
 set /p opt=Press ENTER to start or adv for advanced options: 
 echo.
 
@@ -146,17 +178,21 @@ IF "%opt%"=="" GOTO Start3
 
 set /p db=Please, enter the final normalising level in dB (e.g -1): 
 set /p fade=Please, enter the fade in/out length in seconds (e.g 0.00001): 
+set /p crop=Crop the file? (y/n): 
 set /p spc=Keep the .spc file? (y/n): 
 set /p png=Print the spectrum (y/n)?: 
 echo.
 
 :Start3
-echo. Getting the track length...
+IF "%crop%"=="n" GOTO Jump2
+echo Calculating track length...
 echo.
-powershell ((libopenmpt\openmpt123\amd64\openmpt123 --info %file%.%ext%) -replace 'Duration...: ', '') -replace ':', '' > info.txt
-for /F "skip=8 delims=" %%i in (info.txt) do set "trim=%%i"&goto nextline
-:nextline
+powershell (libopenmpt\openmpt123\amd64\openmpt123 --info %file%.%ext%)[8] -replace 'Duration...: ', '' > length.txt
+powershell ([int]((get-content length.txt).substring(0,2))*60) + ([decimal]((get-content length.txt).substring(3,6))) -replace ',', '.' > trim.txt
+set /p trim=<trim.txt
 echo.
+
+:Jump2
 echo Converting to SPC...
 echo.
 move %file%.%ext% xm2snes\
@@ -178,7 +214,7 @@ echo Closing SPC700 Player...
 echo.
 powershell stop-process -name spcplay
 
-echo Trimming the file...
+echo Deleting any initial silence...
 echo.
 sox\sox -S out.wav out2.wav silence 1 0.001 0.1%
 echo.
@@ -191,14 +227,15 @@ sox\sox --norm=%db% out2.wav -c 1 -D right.wav remix 2
 echo.
 echo Merging into a stereo file...
 echo.
-sox\sox -S --no-clobber --norm=%db% -M left.wav right.wav -c 2 %file%-SNES.wav trim 0 %trim% fade %fade% -0 %fade% stat stats spectrogram -t %file% -o %file%.png
+IF "%crop%"=="y" sox\sox -S --no-clobber --norm=%db% -M left.wav right.wav -c 2 %file%-SNES.wav trim 0 %trim% fade %fade% -0 %fade% stat stats spectrogram -t %file% -o %file%.png
+IF NOT "%crop%"=="y" sox\sox -S --no-clobber --norm=%db% -M left.wav right.wav -c 2 %file%-SNES.wav fade %fade% -0 %fade% stat stats spectrogram -t %file% -o %file%.png
 echo.
 
 echo FINISHED!
 echo.
 
 pause
-del out.wav | del left.wav | del right.wav | del out2.wav | del %file%.%ext%.wav | del info.txt
+del out.wav | del left.wav | del right.wav | del out2.wav | del %file%.%ext%.wav | del length.txt | del trim.txt
 IF "%png%"=="n" del %file%.png
 IF "%spc%"=="n" del %file%.spc
 exit
