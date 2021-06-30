@@ -2,7 +2,7 @@
 :head
 echo 				.........................
 echo 				:    SNES-like Audio    :
-echo 				: Designed by milodraco :
+echo 				: Designed by Milo_Draco:
 echo 				'''''''''''''''''''''''''
 echo.
 echo 	1. wav2wav: Applies some effects, filters, interpolation and transcode (wav-brr-wav) a 
